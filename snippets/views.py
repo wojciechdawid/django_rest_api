@@ -6,12 +6,24 @@ from rest_framework.views import APIView
 
 from snippets.models import Snippet
 from snippets.serializers import SnippetSerializer
-from rest_framework import status
+from rest_framework import status, mixins, generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
 
-class SnippetList(APIView):
+class SnippetList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
+
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class SnippetList_old(APIView):
     # @api_view(["GET", "POST"])
     def get(self, request, format=None):
         snippets = Snippet.objects.all()
@@ -27,7 +39,25 @@ class SnippetList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SnippetDetail(APIView):
+class SnippetDetail(mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.GenericAPIView):
+
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class SnippetDetail_old(APIView):
 
     def get_object(self, pk):
         try:
