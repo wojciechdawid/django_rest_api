@@ -1,17 +1,64 @@
 # from django.http import HttpResponse, JsonResponse
 # from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
 from django.http import Http404
 from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 
 from snippets.models import Snippet
-from snippets.serializers import SnippetSerializer
-from rest_framework import status, mixins, generics
+from snippets.serializers import SnippetSerializer, UserSerializer
+from rest_framework import status, mixins, generics, permissions, renderers
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from .permissions import IsOwnerOrReadOnly
 from rest_framework.decorators import api_view
 
 
-class SnippetList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
+class SnippetList(generics.ListCreateAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+@api_view(["GET"])
+def api_root(request, format=None):
+    return Response(
+        {
+            "users": reverse('user-list', request=request, format=format),
+            "snippets": reverse('snippet-list', request=request, format=format)
+        }
+    )
+
+
+class SnippetHighlighted(generics.GenericAPIView):
+    queryset = Snippet.objects.all()
+    renderer_classes = [renderers.StaticHTMLRenderer]
+
+    def get(self, request, *args, **kwargs):
+        snippet = self.get_object()
+        return Response(snippet.highlighted)
+
+
+class SnippetList_old1(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
 
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
@@ -23,7 +70,7 @@ class SnippetList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.Gener
         return self.create(request, *args, **kwargs)
 
 
-class SnippetList_old(APIView):
+class SnippetList_old2(APIView):
     # @api_view(["GET", "POST"])
     def get(self, request, format=None):
         snippets = Snippet.objects.all()
@@ -39,7 +86,7 @@ class SnippetList_old(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SnippetDetail(mixins.RetrieveModelMixin,
+class SnippetDetail_old1(mixins.RetrieveModelMixin,
                     mixins.UpdateModelMixin,
                     mixins.DestroyModelMixin,
                     generics.GenericAPIView):
@@ -57,7 +104,7 @@ class SnippetDetail(mixins.RetrieveModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
-class SnippetDetail_old(APIView):
+class SnippetDetail_old2(APIView):
 
     def get_object(self, pk):
         try:
