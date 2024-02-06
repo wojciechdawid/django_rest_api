@@ -1,0 +1,29 @@
+GET http://localhost:8000/api/v1/snippets/
+
+###
+
+POST http://localhost:8000/api/v1/snippets/
+Content-Type: application/json
+
+{
+  "title": "moj snippet",
+  "code": "print('Ala ma kota')"
+}
+
+###
+
+GET http://localhost:8000/api/v1/snippets/1/
+
+###
+
+PUT http://localhost:8000/api/v1/snippets/1/
+Content-Type: application/json
+
+{
+  "code": "print('Ala ma kota!!!! AAA')",
+  "linenos": true
+}
+
+###
+
+DELETE http://localhost:8000/api/v1/snippets/2/
